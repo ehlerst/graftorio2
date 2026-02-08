@@ -1,6 +1,6 @@
 {
   "name": "graftorio2-narf",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "title": "graftorio2 - narfs version",
   "author": "ehlerst",
   "description": "visualize metrics from your factorio game in grafana - Space Age & Krastorio2 enhanced",
