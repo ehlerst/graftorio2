@@ -1,3 +1,7 @@
+-- research.lua
+-- Monitors technology research progress and queue
+-- Tracks completed research and exports progress metrics per force
+
 function on_research_finished(event)
 	local research = event.research
 	if not storage.last_research then
@@ -17,11 +21,13 @@ function on_research_finished(event)
 	}
 end
 
+-- Note: This function should be called once per force, not per player
+-- The events.lua module handles this by tracking processed_forces
 function on_research_tick(player, event)
 	if event.tick then
 		gauge_research_queue:reset()
 
-		local researched_queue = storage.last_research and storage.last_research["player.force.name"] or false
+		local researched_queue = storage.last_research and storage.last_research[player.force.name] or false
 		if researched_queue then
 			gauge_research_queue:set(
 				researched_queue.researched and 1 or 0,

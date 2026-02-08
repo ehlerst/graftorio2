@@ -1,3 +1,6 @@
+-- utils.lua
+-- Utility functions for string manipulation
+
 function split(inputstr, sep)
 	local t = {}
 	for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do

@@ -1,14 +1,22 @@
 
 ![](https://mods-data.factorio.com/assets/ad36f974db944b1540ce50a0aea46221f26f7c36.thumb.png)
-[![Github All Releases](https://img.shields.io/github/downloads/remijouannet/graftorio2/total.svg)]()
 
-# [graftorio2](https://mods.factorio.com/mod/graftorio2)
+# graftorio2-narf
 
-**Fork of [graftorio](https://github.com/afex/graftorio)**
+**Enhanced fork of [graftorio2](https://github.com/seiggy/graftorio2) with Space Age & Krastorio2 support**
 
-[中文文档](./README_cn.md)
+visualize metrics from your Factorio game in Grafana - now with Space Age platforms and Krastorio2 tracking!
 
-visualize metrics from your Factorio game in Grafana
+## What's New in This Fork
+
+- ✅ **Space Age Metrics**: Platform count, state, weight, speed, distance, damage tracking
+- ✅ **Krastorio2 Support**: Antimatter reactor monitoring, matter production tracking
+- ✅ **Quality System**: Fixed quality field tracking for items, fluids, and circuit signals
+- ✅ **18-Panel Grafana Dashboard**: Comprehensive monitoring for Space Age & K2 gameplay
+- ✅ **Performance Improvements**: Force deduplication, network contents caching
+- ✅ **Bug Fixes**: Critical file writing API fix, quality object conversion
+
+Original fork of [graftorio](https://github.com/afex/graftorio)
 
 ![](https://mods-data.factorio.com/assets/89653f5de75cdb227b5140805d632faf41459eee.png)
 
@@ -23,7 +31,7 @@ graftorio2 automates this process using docker, or you can set these up by hand.
 
 ## Installation
 
-1. download the latest [release](https://github.com/remijouannet/graftorio2/releases), and extract it into the location you want to host the local database
+1. download the latest [release](https://github.com/tehlers320/graftorio2/releases), and extract it into the location you want to host the local database
 2. [install docker](https://docs.docker.com/install/)
    - if using windows, you will need to be running Windows 10 Pro
 3. if using macOS or Linux, open the extracted `docker-compose.yml` in a text editor and uncomment the correct path to your Factorio install
