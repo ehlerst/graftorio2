@@ -28,7 +28,7 @@ end
 
 function Registry:unregister(collector)
 	if self.collectors[collector.name] ~= nil then
-		table.remove(self.collectors, collector.name)
+		self.collectors[collector.name] = nil
 	end
 end
 

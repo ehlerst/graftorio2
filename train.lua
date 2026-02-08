@@ -1,4 +1,11 @@
+-- train.lua
+-- Collects train travel time metrics including trip times, wait times, and loop times
+-- Uses histograms with configurable buckets for time distribution analysis
+
 require("utils")
+
+-- Constants
+local TICKS_PER_SECOND = 60
 
 function train_buckets(bucket_settings)
 	local train_buckets = {}
@@ -54,9 +61,9 @@ end
 
 local seen = {}
 local function direct_loop(event, duration, labels)
-	from = labels[1]
-	to = labels[2]
-	train_id = labels[3]
+	local from = labels[1]
+	local to = labels[2]
+	local train_id = labels[3]
 
 	if seen[train_id] == nil then
 		seen[train_id] = {}
@@ -67,9 +74,9 @@ local function direct_loop(event, duration, labels)
 	end
 
 	if seen[train_id][from][to] then
-		total = (game.tick - seen[train_id][from][to]) / 60
+		local total = (game.tick - seen[train_id][from][to]) / TICKS_PER_SECOND
 
-		sorted = { from, to }
+		local sorted = { from, to }
 		table.sort(sorted)
 
 		-- watch_train(event, sorted[1] .. ":" .. sorted[2] .. " total " .. total)
@@ -79,7 +86,7 @@ local function direct_loop(event, duration, labels)
 	end
 
 	if seen[train_id][to] and seen[train_id][to][from] then
-		-- watch_train(event, from .. ":" .. to .. " lap " .. (game.tick - seen[train_id][to][from]) / 60)
+		-- watch_train(event, from .. ":" .. to .. " lap " .. (game.tick - seen[train_id][to][from]) / TICKS_PER_SECOND)
 	end
 
 	seen[train_id][from][to] = game.tick
@@ -96,13 +103,13 @@ local function track_arrival(event)
 
 	-- watch_station(event, "arrived at " .. event.train.path_end_stop.backer_name)
 	if arrivals[event.train.path_end_stop.backer_name][1] ~= 0 then
-		lag = (game.tick - arrivals[event.train.path_end_stop.backer_name][1]) / 60
-		labels = { event.train.path_end_stop.backer_name }
+		local time_since_last_arrival = (game.tick - arrivals[event.train.path_end_stop.backer_name][1]) / TICKS_PER_SECOND
+		local labels = { event.train.path_end_stop.backer_name }
 
-		gauge_train_arrival_time:set(lag, labels)
-		histogram_train_arrival_time:observe(lag, labels)
+		gauge_train_arrival_time:set(time_since_last_arrival, labels)
+		histogram_train_arrival_time:observe(time_since_last_arrival, labels)
 
-		-- watch_station(event, "lag was " .. lag)
+		-- watch_station(event, "time_since_last_arrival was " .. time_since_last_arrival)
 	end
 
 	arrivals[event.train.path_end_stop.backer_name][1] = game.tick
@@ -127,12 +134,12 @@ function register_events_train(event)
 				return
 			end
 
-			duration = (game.tick - train_trips[event.train.id][2]) / 60
-			wait = train_trips[event.train.id][4] / 60
+			local duration = (game.tick - train_trips[event.train.id][2]) / TICKS_PER_SECOND
+			local wait = train_trips[event.train.id][4] / TICKS_PER_SECOND
 
 			-- watch_train(event, event.train.id .. ": " .. train_trips[event.train.id][1] .. "->" .. event.train.path_end_stop.backer_name .. " took " .. duration .. "s waited " .. wait .. "s")
 
-			labels = { train_trips[event.train.id][1], event.train.path_end_stop.backer_name, event.train.id }
+			local labels = { train_trips[event.train.id][1], event.train.path_end_stop.backer_name, event.train.id }
 
 			gauge_train_trip_time:set(duration, labels)
 			gauge_train_wait_time:set(wait, labels)
@@ -156,7 +163,7 @@ function register_events_train(event)
 			-- begin moving after waiting at a signal
 			train_trips[event.train.id][4] = train_trips[event.train.id][4]
 				+ (game.tick - train_trips[event.train.id][3])
-			-- watch_train(event, event.train.id .. " waited for " .. (game.tick - train_trips[event.train.id][3]) / 60)
+			-- watch_train(event, event.train.id .. " waited for " .. (game.tick - train_trips[event.train.id][3]) / TICKS_PER_SECOND)
 			train_trips[event.train.id][3] = 0
 		end
 	end

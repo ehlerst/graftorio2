@@ -137,64 +137,19 @@ gauge_power_production_input =
 gauge_power_production_output =
 	prometheus.gauge("factorio_power_production_output", "power consumed", { "force", "name", "network", "surface" })
 
-script.on_init(function()
-	if script.active_mods["YARM"] then
-		storage.yarm_on_site_update_event_id = remote.call("YARM", "get_on_site_updated_event_id")
-		script.on_event(storage.yarm_on_site_update_event_id, handleYARM)
-	end
+-- Space Age platform metrics
+gauge_platform_count = prometheus.gauge("factorio_platform_count", "number of space platforms", { "force" })
+gauge_platform_state = prometheus.gauge("factorio_platform_state", "platform state (1=active)", { "force", "platform", "state" })
+gauge_platform_weight = prometheus.gauge("factorio_platform_weight", "platform total weight", { "force", "platform" })
+gauge_platform_speed = prometheus.gauge("factorio_platform_speed", "platform speed", { "force", "platform" })
+gauge_platform_distance = prometheus.gauge("factorio_platform_distance", "platform distance along connection (0-1)", { "force", "platform" })
+gauge_platform_damaged_tiles = prometheus.gauge("factorio_platform_damaged_tiles", "number of damaged platform tiles", { "force", "platform" })
 
-	on_power_init()
-	on_circuit_network_init()
+-- Krastorio2 metrics
+gauge_kr_antimatter_reactors = prometheus.gauge("factorio_kr_antimatter_reactors", "number of antimatter reactors", { "force", "surface" })
 
-	script.on_nth_tick(nth_tick, register_events)
-
-	script.on_event(defines.events.on_player_joined_game, register_events_players)
-	script.on_event(defines.events.on_player_left_game, register_events_players)
-	script.on_event(defines.events.on_player_removed, register_events_players)
-	script.on_event(defines.events.on_player_kicked, register_events_players)
-	script.on_event(defines.events.on_player_banned, register_events_players)
-
-	-- train envents
-	if not disable_train_stats then
-		script.on_event(defines.events.on_train_changed_state, register_events_train)
-	end
-
-	-- power events
-	script.on_event(defines.events.on_built_entity, on_power_build)
-	script.on_event(defines.events.on_robot_built_entity, on_power_build)
-	script.on_event(defines.events.script_raised_built, on_power_build)
-	script.on_event(defines.events.on_player_mined_entity, on_power_destroy)
-	script.on_event(defines.events.on_robot_mined_entity, on_power_destroy)
-	script.on_event(defines.events.on_entity_died, on_power_destroy)
-	script.on_event(defines.events.script_raised_destroy, on_power_destroy)
-
-	-- research events
-	script.on_event(defines.events.on_research_finished, on_research_finished)
-
-	-- circuit-network
-	script.on_event(defines.events.on_built_entity, on_circuit_network_build)
-	script.on_event(defines.events.on_robot_built_entity, on_circuit_network_build)
-	if script.active_mods["space-exploration"] or (defines.events.on_space_platform_built_entity ~= nil) then
-		script.on_event(defines.events.on_space_platform_built_entity, on_circuit_network_build)
-		script.on_event(defines.events.on_space_platform_mined_entity, on_circuit_network_destroy)
-	end
-	script.on_event(defines.events.script_raised_built, on_circuit_network_build)
-	script.on_event(defines.events.on_player_mined_entity, on_circuit_network_destroy)
-	script.on_event(defines.events.on_robot_mined_entity, on_circuit_network_destroy)
-	script.on_event(defines.events.on_entity_died, on_circuit_network_destroy)
-	script.on_event(defines.events.script_raised_destroy, on_circuit_network_destroy)
-end)
-
-script.on_load(function()
-	if storage.yarm_on_site_update_event_id then
-		if script.get_event_handler(storage.yarm_on_site_update_event_id) then
-			script.on_event(storage.yarm_on_site_update_event_id, handleYARM)
-		end
-	end
-
-	on_power_load()
-	on_circuit_network_load()
-
+-- Common event registration function to avoid duplication between on_init and on_load
+local function register_all_events()
 	script.on_nth_tick(nth_tick, register_events)
 
 	script.on_event(defines.events.on_player_joined_game, register_events_players)
@@ -220,7 +175,7 @@ script.on_load(function()
 	-- research events
 	script.on_event(defines.events.on_research_finished, on_research_finished)
 
-	-- circuit-network
+	-- circuit-network events
 	script.on_event(defines.events.on_built_entity, on_circuit_network_build)
 	script.on_event(defines.events.on_robot_built_entity, on_circuit_network_build)
 	if script.active_mods["space-exploration"] or (defines.events.on_space_platform_built_entity ~= nil) then
@@ -232,11 +187,39 @@ script.on_load(function()
 	script.on_event(defines.events.on_robot_mined_entity, on_circuit_network_destroy)
 	script.on_event(defines.events.on_entity_died, on_circuit_network_destroy)
 	script.on_event(defines.events.script_raised_destroy, on_circuit_network_destroy)
+end
+
+script.on_init(function()
+	if script.active_mods["YARM"] then
+		storage.yarm_on_site_update_event_id = remote.call("YARM", "get_on_site_updated_event_id")
+		script.on_event(storage.yarm_on_site_update_event_id, handle_yarm)
+	end
+
+	on_power_init()
+	on_circuit_network_init()
+
+	register_all_events()
+end)
+
+script.on_load(function()
+	-- Only register YARM event if YARM mod is actually active
+	if storage.yarm_on_site_update_event_id and script.active_mods["YARM"] then
+		-- Use pcall to safely check if the event ID is valid
+		local success, handler = pcall(script.get_event_handler, storage.yarm_on_site_update_event_id)
+		if success and handler then
+			script.on_event(storage.yarm_on_site_update_event_id, handle_yarm)
+		end
+	end
+
+	on_power_load()
+	on_circuit_network_load()
+
+	register_all_events()
 end)
 
 script.on_configuration_changed(function(event)
 	if script.active_mods["YARM"] then
 		storage.yarm_on_site_update_event_id = remote.call("YARM", "get_on_site_updated_event_id")
-		script.on_event(storage.yarm_on_site_update_event_id, handleYARM)
+		script.on_event(storage.yarm_on_site_update_event_id, handle_yarm)
 	end
 end)

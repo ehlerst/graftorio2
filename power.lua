@@ -1,7 +1,19 @@
+-- power.lua
+-- Tracks electric network statistics for Prometheus export
+-- Maintains state of electric producers/consumers with caching optimizations
+-- Handles power switches and ignored networks
+
+-- Constants
+local FAILED_LOOKUP_BACKOFF_TICKS = 600  -- 10 seconds (at 60 ticks/second)
+local CLEANUP_INTERVAL_TICKS = 3600      -- 1 minute
+
 local script_data = {
 	has_checked = false,
 	networks = {},
 	switches = {},
+	ignored_networks_cache = nil,
+	ignored_networks_dirty = true,
+	failed_lookups = {},
 }
 
 local map = {}
@@ -71,6 +83,12 @@ local function rescan_worlds()
 end
 
 local function get_ignored_networks_by_switches()
+	-- Return cached result if not dirty
+	if not script_data.ignored_networks_dirty and script_data.ignored_networks_cache then
+		return script_data.ignored_networks_cache
+	end
+
+	-- Recalculate ignored networks
 	local ignored = {}
 	local max = math.max
 	for switch_id, val in pairs(script_data.switches) do
@@ -80,12 +98,16 @@ local function get_ignored_networks_by_switches()
 			script_data.switches[switch_id] = nil
 		end
 		local switch = find_entity(switch_id, "power-switch")
-		if switch.power_switch_state and #switch.neighbours.copper > 1 then
+		if switch and switch.power_switch_state and #switch.neighbours.copper > 1 then
 			local network =
 				max(switch.neighbours.copper[1].electric_network_id, switch.neighbours.copper[2].electric_network_id)
 			ignored[network] = true
 		end
 	end
+
+	-- Cache the result
+	script_data.ignored_networks_cache = ignored
+	script_data.ignored_networks_dirty = false
 	return ignored
 end
 
@@ -98,6 +120,8 @@ function on_power_build(event)
 	elseif entity and entity.type == "power-switch" then
 		script_data.switches[entity.unit_number] = 1
 		map[entity.unit_number] = entity
+		-- Invalidate ignored networks cache when switch is built
+		script_data.ignored_networks_dirty = true
 	end
 end
 
@@ -126,6 +150,8 @@ function on_power_destroy(event)
 		end
 	elseif entity.type == "power-switch" then
 		script_data.switches[entity.unit_number] = nil
+		-- Invalidate ignored networks cache when switch is destroyed
+		script_data.ignored_networks_dirty = true
 	end
 
 	-- if some unexpected stuff occurs, try enabling rescan_worlds
@@ -134,10 +160,15 @@ end
 
 function on_power_load()
 	script_data.has_checked = false
+	script_data.ignored_networks_dirty = true
+	script_data.ignored_networks_cache = nil
 end
 
 function on_power_init()
 	script_data.has_checked = false
+	script_data.ignored_networks_dirty = true
+	script_data.ignored_networks_cache = nil
+	script_data.failed_lookups = {}
 end
 
 function on_power_tick(event)
@@ -147,6 +178,16 @@ function on_power_tick(event)
 		if not script_data.has_checked then
 			rescan_worlds()
 			script_data.has_checked = true
+		end
+
+		-- Periodic cleanup of failed lookups
+		if event.tick % CLEANUP_INTERVAL_TICKS == 0 then
+			local cleanup_threshold = event.tick - CLEANUP_INTERVAL_TICKS
+			for entity_number, failed_tick in pairs(script_data.failed_lookups) do
+				if failed_tick < cleanup_threshold then
+					script_data.failed_lookups[entity_number] = nil
+				end
+			end
 		end
 
 		gauge_power_production_input:reset()
@@ -159,11 +200,19 @@ function on_power_tick(event)
 				network.entity = nil
 			end
 
+			-- Check if this entity has failed lookups recently
+			if script_data.failed_lookups[network.entity_number] and
+			   event.tick - script_data.failed_lookups[network.entity_number] < FAILED_LOOKUP_BACKOFF_TICKS then
+				goto skip_network
+			end
+
 			local entity = find_entity(network.entity_number, "electric-pole")
 
 			if not entity then
-				rescan_worlds()
-				entity = find_entity(network.entity_number, "electric-pole")
+				-- Mark as failed lookup and remove invalid network instead of rescanning
+				script_data.failed_lookups[network.entity_number] = event.tick
+				script_data.networks[idx] = nil
+				goto skip_network
 			end
 
 			if
@@ -172,6 +221,8 @@ function on_power_tick(event)
 				and not ignored[entity.electric_network_id]
 				and entity.electric_network_id == idx
 			then
+				-- Clear failed lookup tracking if entity is found and valid
+				script_data.failed_lookups[network.entity_number] = nil
 				local force_name = entity.force.name
 				local surface_name = entity.surface.name
 				for name, n in pairs(entity.electric_network_statistics.input_counts) do
@@ -184,9 +235,10 @@ function on_power_tick(event)
 				-- assume this network has been merged with some other so unset
 				script_data.networks[idx] = nil
 			elseif entity and not entity.valid then
-				-- Invalid  entity remove anyhow
+				-- Invalid entity remove anyhow
 				script_data.networks[idx] = nil
 			end
+			::skip_network::
 		end
 	end
 end
