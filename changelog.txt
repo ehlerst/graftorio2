@@ -1,3 +1,8 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Date: 2026-02-08
+  Optimizations:
+    - performance improvements and misc fix
 ## 2.0.5
 - Fixed quality field tracking: quality objects now properly converted to strings (.quality.name)
 - Added Space Age platform metrics: count, state, weight, speed, distance, damaged tiles

@@ -1,11 +1,13 @@
 {
   "name": "graftorio2-narf",
-  "version": "2.0.5",
+  "version": "1.0.0",
   "title": "graftorio2 - narfs version",
   "author": "tehlers320",
   "description": "visualize metrics from your factorio game in grafana - Space Age & Krastorio2 enhanced",
   "homepage": "https://github.com/tehlers320/graftorio2",
-  "dependencies": ["? YARM >= 0.8.207"],
+  "dependencies": [
+    "? YARM >= 0.8.207"
+  ],
   "factorio_version": "2.0",
   "quality_required": false,
   "rail_bridges_required": false,
