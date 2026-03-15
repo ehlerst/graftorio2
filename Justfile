@@ -24,7 +24,8 @@ info:
   @printf 'mod: %s\nversion: %s\npackage: %s\nFACTORIO_MODS_DIR: %s\n' '{{ mod_name }}' '{{ mod_version }}' '{{ package_zip }}' '{{ if factorio_mods_dir != "" { factorio_mods_dir } else { "<not found>" } }}'
 
 # Build a release zip into pkg/.
-package: _pkg-dir
+package:
+  mkdir -p {{ package_dir }}
   bun fmtk package --outdir {{ package_dir }}
 
 # Symlink the repo into FACTORIO_MODS_DIR for live local testing.
@@ -55,10 +56,6 @@ docker-logs service="":
 # Remove generated zip artifacts.
 clean:
   rm -f {{ package_dir }}/*.zip
-
-[private]
-_pkg-dir:
-  mkdir -p {{ package_dir }}
 
 [private]
 _require_factorio_mods_dir:
