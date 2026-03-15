@@ -5,6 +5,7 @@ mod_name := `bun -e 'console.log(JSON.parse(require("node:fs").readFileSync("inf
 mod_version := `bun -e 'console.log(JSON.parse(require("node:fs").readFileSync("info.json", "utf8")).version)'`
 package_dir := "pkg"
 package_zip := package_dir + "/" + mod_name + "_" + mod_version + ".zip"
+factorio_mods_dir := `if [ -n "${FACTORIO_MODS_DIR:-}" ]; then printf '%s' "$FACTORIO_MODS_DIR"; elif [ -d "$HOME/Library/Application Support/factorio/mods" ]; then printf '%s' "$HOME/Library/Application Support/factorio/mods"; elif [ -n "${APPDATA:-}" ] && [ -d "$APPDATA/Factorio/mods" ]; then printf '%s' "$APPDATA/Factorio/mods"; elif [ -d "$HOME/.factorio/mods" ]; then printf '%s' "$HOME/.factorio/mods"; elif [ -d "$HOME/.var/app/com.valvesoftware.Steam/.factorio/mods" ]; then printf '%s' "$HOME/.var/app/com.valvesoftware.Steam/.factorio/mods"; fi`
 
 alias pkg := package
 alias up := docker-up
@@ -20,7 +21,7 @@ deps:
 
 # Print resolved mod metadata and optional local install path.
 info:
-  @printf 'mod: %s\nversion: %s\npackage: %s\nFACTORIO_MODS_DIR: %s\n' '{{ mod_name }}' '{{ mod_version }}' '{{ package_zip }}' "${FACTORIO_MODS_DIR:-<unset>}"
+  @printf 'mod: %s\nversion: %s\npackage: %s\nFACTORIO_MODS_DIR: %s\n' '{{ mod_name }}' '{{ mod_version }}' '{{ package_zip }}' '{{ if factorio_mods_dir != "" { factorio_mods_dir } else { "<not found>" } }}'
 
 # Datestamp the current changelog entry.
 datestamp:
@@ -36,16 +37,16 @@ package: _pkg-dir
 
 # Symlink the repo into FACTORIO_MODS_DIR for live local testing.
 install-link: _require_factorio_mods_dir
-  @if [ -e "$FACTORIO_MODS_DIR/{{ mod_name }}" ] && [ ! -L "$FACTORIO_MODS_DIR/{{ mod_name }}" ]; then printf '%s\n' 'Refusing to replace a real directory at $FACTORIO_MODS_DIR/{{ mod_name }}.' >&2; exit 1; fi
-  @rm -f "$FACTORIO_MODS_DIR"/{{ mod_name }}_*.zip
-  @ln -sfn "$PWD" "$FACTORIO_MODS_DIR/{{ mod_name }}"
-  @printf 'linked %s -> %s\n' "$FACTORIO_MODS_DIR/{{ mod_name }}" "$PWD"
+  @if [ -e "{{ factorio_mods_dir }}/{{ mod_name }}" ] && [ ! -L "{{ factorio_mods_dir }}/{{ mod_name }}" ]; then printf '%s\n' 'Refusing to replace a real directory at {{ factorio_mods_dir }}/{{ mod_name }}.' >&2; exit 1; fi
+  @rm -f "{{ factorio_mods_dir }}"/{{ mod_name }}_*.zip
+  @ln -sfn "$PWD" "{{ factorio_mods_dir }}/{{ mod_name }}"
+  @printf 'linked %s -> %s\n' "{{ factorio_mods_dir }}/{{ mod_name }}" "$PWD"
 
 # Package and copy the current zip into FACTORIO_MODS_DIR.
 install-zip: package _require_factorio_mods_dir
-  @rm -f "$FACTORIO_MODS_DIR"/{{ mod_name }}_*.zip
-  @cp "{{ package_zip }}" "$FACTORIO_MODS_DIR/"
-  @printf 'copied %s to %s\n' "{{ package_zip }}" "$FACTORIO_MODS_DIR"
+  @rm -f "{{ factorio_mods_dir }}"/{{ mod_name }}_*.zip
+  @cp "{{ package_zip }}" "{{ factorio_mods_dir }}/"
+  @printf 'copied %s to %s\n' "{{ package_zip }}" "{{ factorio_mods_dir }}"
 
 # Start the local Grafana/Prometheus stack.
 docker-up:
@@ -78,5 +79,5 @@ _pkg-dir:
 
 [private]
 _require_factorio_mods_dir:
-  @if [ -z "${FACTORIO_MODS_DIR:-}" ]; then printf '%s\n' 'Set FACTORIO_MODS_DIR or put it in a .env file.' >&2; exit 1; fi
-  @if [ ! -d "$FACTORIO_MODS_DIR" ]; then printf 'Directory not found: %s\n' "$FACTORIO_MODS_DIR" >&2; exit 1; fi
+  @if [ -z "{{ factorio_mods_dir }}" ]; then printf '%s\n' 'Could not detect Factorio mods directory. Set FACTORIO_MODS_DIR to override.' >&2; exit 1; fi
+  @if [ ! -d "{{ factorio_mods_dir }}" ]; then printf 'Directory not found: %s\n' "{{ factorio_mods_dir }}" >&2; exit 1; fi
