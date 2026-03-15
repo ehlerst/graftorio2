@@ -11,9 +11,9 @@ alias pkg := package
 alias up := docker-up
 alias down := docker-down
 
-# Show available recipes.
-help:
-  @just --list
+[private]
+@help:
+  just --list
 
 # Install JavaScript dependencies.
 deps:
