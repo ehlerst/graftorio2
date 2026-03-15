@@ -5,6 +5,7 @@ mod_name := `bun -e 'console.log(JSON.parse(require("node:fs").readFileSync("inf
 mod_version := `bun -e 'console.log(JSON.parse(require("node:fs").readFileSync("info.json", "utf8")).version)'`
 package_dir := "pkg"
 package_zip := package_dir + "/" + mod_name + "_" + mod_version + ".zip"
+docker := "docker compose -f docker-compose.dev.yml"
 factorio_mods_dir := `if [ -n "${FACTORIO_MODS_DIR:-}" ]; then printf '%s' "$FACTORIO_MODS_DIR"; elif [ -d "$HOME/Library/Application Support/factorio/mods" ]; then printf '%s' "$HOME/Library/Application Support/factorio/mods"; elif [ -n "${APPDATA:-}" ] && [ -d "$APPDATA/Factorio/mods" ]; then printf '%s' "$APPDATA/Factorio/mods"; elif [ -d "$HOME/.factorio/mods" ]; then printf '%s' "$HOME/.factorio/mods"; elif [ -d "$HOME/.var/app/com.valvesoftware.Steam/.factorio/mods" ]; then printf '%s' "$HOME/.var/app/com.valvesoftware.Steam/.factorio/mods"; fi`
 
 alias pkg := package
@@ -43,15 +44,15 @@ install-zip: package _require_factorio_mods_dir
 
 # Start the local Grafana/Prometheus stack.
 docker-up:
-  docker compose up -d
+  {{ docker }} up -d
 
 # Stop the local Grafana/Prometheus stack.
 docker-down:
-  docker compose down
+  {{ docker }} down
 
 # Follow stack logs, optionally filtered by service.
 docker-logs service="":
-  @if [ -n "{{ service }}" ]; then docker compose logs -f "{{ service }}"; else docker compose logs -f; fi
+  @if [ -n "{{ service }}" ]; then {{ docker }} logs -f "{{ service }}"; else {{ docker }} logs -f; fi
 
 # Remove generated zip artifacts.
 clean:
