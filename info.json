@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "title": "graftorio2 - Geo's version",
   "author": "Geostyx",
-  "description": "visualize metrics from your factorio game in grafana - Space Age & Krastorio2 enhanced",
+  "description": "Visualize metrics from your factorio game in grafana",
   "homepage": "https://github.com/jahands/graftorio2",
   "dependencies": [
     "? YARM >= 0.8.207"

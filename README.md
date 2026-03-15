@@ -3,18 +3,13 @@
 
 # graftorio2-narf
 
-**Enhanced fork of [graftorio2](https://github.com/seiggy/graftorio2) with Space Age & Krastorio2 support**
+**Enhanced fork of [graftorio2-narf](https://mods.factorio.com/mod/graftorio2-narf) with my own tweaks**
 
-visualize metrics from your Factorio game in Grafana - now with Space Age platforms and Krastorio2 tracking!
+Visualize metrics from your Factorio game in Grafana
 
 ## What's New in This Fork
 
-- ✅ **Space Age Metrics**: Platform count, state, weight, speed, distance, damage tracking
-- ✅ **Krastorio2 Support**: Antimatter reactor monitoring, matter production tracking
-- ✅ **Quality System**: Fixed quality field tracking for items, fluids, and circuit signals
-- ✅ **18-Panel Grafana Dashboard**: Comprehensive monitoring for Space Age & K2 gameplay
-- ✅ **Performance Improvements**: Force deduplication, network contents caching
-- ✅ **Bug Fixes**: Critical file writing API fix, quality object conversion
+* nothing yet
 
 Original fork of [graftorio](https://github.com/afex/graftorio)
 
