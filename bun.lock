@@ -1,0 +1,15 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "graftorio2-geo",
+      "devDependencies": {
+        "factoriomod-debug": "2.0.10",
+      },
+    },
+  },
+  "packages": {
+    "factoriomod-debug": ["factoriomod-debug@2.0.10", "", { "bin": { "fmtk": "dist/fmtk-cli.js", "factoriomod-debug": "dist/fmtk-cli.js" } }, "sha512-UMuf8IIs2YM3vvQim7Kd+A7MuW3b7kTb75tvDCTrRUtU4kWXdtXfPsLN64GE9tKznFE9FOUhCZWeeIEnavpvWQ=="],
+  }
+}
