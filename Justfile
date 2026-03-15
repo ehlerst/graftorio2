@@ -11,6 +11,7 @@ factorio_mods_dir := `if [ -n "${FACTORIO_MODS_DIR:-}" ]; then printf '%s' "$FAC
 alias pkg := package
 alias up := docker-up
 alias down := docker-down
+alias check := lint
 
 [private]
 @help:
@@ -19,6 +20,9 @@ alias down := docker-down
 # Install JavaScript dependencies.
 deps:
   bun install
+
+lint:
+  luacheck .
 
 # Print resolved mod metadata and optional local install path.
 info:
